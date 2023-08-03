@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const { connect } = require('http2');
 const socketIO = require('socket.io');
 
 const app = express();
@@ -39,8 +40,13 @@ io.on('connection', (socket) => {
 
   socket.on('sendCommand', (data) => {
     console.log(JSON.stringify(data));
-    let sendingData = {'command': data.command, 'returnAddress': parsedData}
-    io.to(parsedData.target).emit('command', sendingData);
+    let sendingData = {'command': data.command, 'returnAddress': socket.id}
+    io.to(data.target).emit('command', sendingData);
+  });
+
+  socket.on('commandResponse', (data) => {
+    let sendingData = {'output': data.output};
+    io.to(data.returnAddress).emit('sendCommandResponse', sendingData);
   });
 
   socket.on('getInfo', (data) => {
@@ -51,14 +57,13 @@ io.on('connection', (socket) => {
     if (parsedData.username == 'posydon' && parsedData.password == 'admin') {
       socket.data.isAuthenticated = true;
       socket.emit('authenticationResponse');
-    } else {
-      
     }
   });
 
   // Handle 'disconnect' event
   socket.on('disconnect', () => {
     console.log('A user disconnected');
+    delete connectedClients[socket.id]
   });
 
   socket.on('getConnectedClients', (data) => {
