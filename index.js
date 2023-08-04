@@ -3,12 +3,15 @@ const http = require('http');
 const { connect } = require('http2');
 const socketIO = require('socket.io');
 
+require('dotenv').config();
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
 const port = 3000;
 
+const API_KEY = process.env.API_KEY
 let connectedClients = {}
 // Serve static files from the "public" folder
 app.use(express.static('public'));
@@ -21,7 +24,11 @@ io.on('connection', (socket) => {
     try {
       if (!data.client) {
         socket.data.isClient = false;
-        socket.data.isAuthenticated = false;
+        if (data.apiKey === API_KEY) {
+          socket.data.isAuthenticated = false;
+        } else {
+          socket.data.isAuthenticated = false;
+        }
       } else {
         socket.data.isClient = true;
         const clientInfo = {
@@ -32,6 +39,7 @@ io.on('connection', (socket) => {
       }
       socket.emit('establishmentResponse', 200)
     } catch (error) {
+      console.log(error)
       socket.emit('establishmentResponse', 500)
     }
 
@@ -39,7 +47,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('sendCommand', (data) => {
-    console.log(JSON.stringify(data));
     let sendingData = {'command': data.command, 'returnAddress': socket.id}
     io.to(data.target).emit('command', sendingData);
   });
@@ -52,13 +59,6 @@ io.on('connection', (socket) => {
   socket.on('getInfo', (data) => {
     socket.emit('getInfoResponse', connectedClients[data.target]); //bracket notation to prevent confusion
   })
-
-  socket.on('authenticate', (data) => {
-    if (parsedData.username == 'posydon' && parsedData.password == 'admin') {
-      socket.data.isAuthenticated = true;
-      socket.emit('authenticationResponse');
-    }
-  });
 
   // Handle 'disconnect' event
   socket.on('disconnect', () => {
