@@ -31,9 +31,13 @@ io.on('connection', (socket) => {
         }
       } else {
         socket.data.isClient = true;
+        if (data.customId) {
+          socket.id = data.customId;
+        }
         const clientInfo = {
           ip: data.ip, // Assuming you have 'ip' in the data object
           username: data.username, // Assuming you have 'username' in the data object
+          id: socket.id
         };
         connectedClients[socket.id] = clientInfo;
       }
@@ -47,12 +51,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('sendCommand', (data) => {
-    let sendingData = {'command': data.command, 'returnAddress': socket.id}
+    let sendingData = {'command': data.command, 'returnAddress': socket.id, 'module': data.module}
     io.to(data.target).emit('command', sendingData);
   });
 
   socket.on('commandResponse', (data) => {
-    let sendingData = {'output': data.output};
+    let sendingData = {'output': data.output, 'immediate': data.immediate, 'client': socket.id, 'originalCommand': data.originalCommand};
     io.to(data.returnAddress).emit('sendCommandResponse', sendingData);
   });
 
