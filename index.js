@@ -57,11 +57,18 @@ io.on('connection', (socket) => {
 
   socket.on('commandResponse', (data) => {
     let sendingData = {'output': data.output, 'immediate': data.immediate, 'client': socket.id, 'originalCommand': data.originalCommand};
+    console.log(sendingData)
     io.to(data.returnAddress).emit('sendCommandResponse', sendingData);
   });
 
   socket.on('getInfo', (data) => {
     socket.emit('getInfoResponse', connectedClients[data.target]); //bracket notation to prevent confusion
+  });
+  
+  socket.on('imageFromClient', (data) => {
+    new_data = {'id': socket.id, 'image': data.image}
+    console.log(data.returnAddress)
+    io.to(data.returnAddress).emit('imageFromClientForwarding', new_data);
   })
 
   // Handle 'disconnect' event
